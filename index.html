@@ -80,6 +80,19 @@
   .seg button.on{background:var(--card); color:var(--roseDeep); box-shadow:0 1px 4px rgba(0,0,0,.08);}
   .principle{margin-bottom:11px;} .principle .pt{font-family:'Oswald',sans-serif; font-weight:700; text-transform:uppercase; font-size:15px; margin-bottom:3px;} .principle .pb{font-size:13.5px; color:var(--ink2);}
 
+  .chordrow{display:flex; align-items:center; gap:10px; padding:11px 12px; border:1px solid var(--line); border-radius:11px; background:var(--card); margin-bottom:7px; cursor:pointer;}
+  .chordrow.on{border-color:var(--rose); background:#FBEFF3; box-shadow:0 0 0 1px var(--rose) inset;}
+  .chordrow .rom{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:13px; color:var(--roseDeep); min-width:46px;}
+  .chordrow .cname{font-family:'Oswald',sans-serif; font-weight:700; font-size:18px; min-width:58px;}
+  .chordrow .ctag{font-size:10.5px; color:var(--ink2);}
+  .chordrow .cnotes{margin-left:auto; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink2); text-align:right;}
+  .cprog{display:flex; align-items:center; gap:10px; padding:9px 12px; border:1px solid var(--line); border-radius:10px; background:var(--card); margin-bottom:7px;}
+  .cprog .pl{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:11px; color:var(--ink2); min-width:78px;}
+  .cprog .pc{font-family:'Oswald',sans-serif; font-weight:700; font-size:15px; color:var(--roseDeep);}
+  .cprog .pc .aw{color:var(--line); margin:0 5px; font-weight:400;}
+  .banner{background:#FBF3E3; border-left:3px solid var(--ember); border-radius:0 9px 9px 0; padding:10px 12px; font-size:12.5px; color:#6a4d18; margin-bottom:11px;}
+  .banner b{color:#4d3810;}
+  .cformula{font-size:13px; margin:4px 2px 10px;} .cformula b{color:var(--roseDeep);}
   nav{position:fixed; bottom:0; left:0; right:0; height:calc(var(--navH) + env(safe-area-inset-bottom)); padding-bottom:env(safe-area-inset-bottom);
     background:var(--card); border-top:1px solid var(--line); display:flex; z-index:10;}
   nav button{flex:1; background:none; border:none; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; color:var(--ink2); padding-top:6px;}
@@ -94,6 +107,7 @@
 </div>
 <nav id="nav">
   <button data-t="scales" class="on"><span class="ic">≡</span><span class="tx">Scales</span></button>
+  <button data-t="chords"><span class="ic">♫</span><span class="tx">Chords</span></button>
   <button data-t="boxes"><span class="ic">▦</span><span class="tx">Boxes</span></button>
   <button data-t="guide"><span class="ic">◉</span><span class="tx">Guide</span></button>
 </nav>
@@ -139,7 +153,7 @@ const SCALES=[
 ];
 const GROUPS=[['modes','Major-scale modes'],['pent','Pentatonic & blues'],['minor','Other minor scales']];
 
-let state={ root:4, scaleId:'aeolian', boxType:'minpent', tab:'scales', sound:true };
+let state={ root:4, scaleId:'aeolian', boxType:'minpent', tab:'scales', sound:true, chordDeg:0, seventh:false };
 const view=document.getElementById('view');
 const scaleById=id=>SCALES.find(s=>s.id===id);
 
@@ -161,15 +175,14 @@ function playScale(scale, root){
 
 /* general neck renderer */
 function degMapFor(scale){ const m={}; scale.off.forEach((o,i)=>m[o]=scale.deg[i]); return m; }
-function neck(scale, root, f0, f1){
-  const dmap=degMapFor(scale);
+function neck(dmap, root, f0, f1, idsuf){
   const padL=24, padR=10, padT=14, padB=20, cellW=38, rowH=25, n=f1-f0+1;
   const bW=n*cellW, bH=6*rowH, W=padL+bW+padR, H=padT+bH+padB;
   const x=fr=>padL+(fr-f0+0.5)*cellW, wire=fr=>padL+(fr-f0+1)*cellW, y=s=>padT+s*rowH+rowH/2;
   const MK=[3,5,7,9,15,17,21], DBL=[12,24];
   let s=`<svg viewBox="0 0 ${W} ${H}" role="img">`;
-  s+=`<defs><linearGradient id="g${scale.id}${root}${f0}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#523A27"/><stop offset="1" stop-color="#3E2C1D"/></linearGradient></defs>`;
-  s+=`<rect x="${padL}" y="${padT-4}" width="${bW}" height="${bH+8}" rx="6" fill="url(#g${scale.id}${root}${f0})"/>`;
+  s+=`<defs><linearGradient id="g${idsuf}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#523A27"/><stop offset="1" stop-color="#3E2C1D"/></linearGradient></defs>`;
+  s+=`<rect x="${padL}" y="${padT-4}" width="${bW}" height="${bH+8}" rx="6" fill="url(#g${idsuf})"/>`;
   const midY=padT+bH/2;
   for(let fr=f0;fr<=f1;fr++){ if(MK.includes(fr)) s+=`<circle cx="${x(fr)}" cy="${midY}" r="3.6" fill="#6f5636" opacity=".5"/>`;
     if(DBL.includes(fr)){ s+=`<circle cx="${x(fr)}" cy="${padT+rowH*1.0}" r="3.6" fill="#6f5636" opacity=".5"/><circle cx="${x(fr)}" cy="${padT+rowH*5.0}" r="3.6" fill="#6f5636" opacity=".5"/>`; } }
@@ -217,7 +230,7 @@ function renderScales(){
 
     <h2 class="sec">On the neck</h2>
     <div class="card">
-      <div class="neckwrap">${neck(sc, state.root, 0, 12)}</div>
+      <div class="neckwrap">${neck(degMapFor(sc), state.root, 0, 12, sc.id)}</div>
       <div class="legend"><span class="d"><span class="sw sw-r"></span> root</span><span class="d"><span class="sw sw-n"></span> scale tone (interval labelled)</span></div>
       <div class="diagcap">Frets 0\u201312 \u00b7 ${rootName} ${sc.name}</div>
     </div>
@@ -238,7 +251,7 @@ function renderBoxes(){
   let boxes='';
   BOX_WINS.forEach((w,i)=>{
     const lo=f0+w[0], hi=f0+w[1];
-    boxes+=`<div class="card"><div class="boxhead"><span class="bt">Position ${i+1}</span><span class="bf">Frets ${lo}\u2013${hi}</span></div><div class="neckwrap">${neck(sc, state.root, lo, hi)}</div></div>`;
+    boxes+=`<div class="card"><div class="boxhead"><span class="bt">Position ${i+1}</span><span class="bf">Frets ${lo}\u2013${hi}</span></div><div class="neckwrap">${neck(degMapFor(sc), state.root, lo, hi, sc.id+i)}</div></div>`;
   });
   view.innerHTML=`
     <div class="rlabel">Root note</div>
@@ -256,6 +269,107 @@ function renderBoxes(){
   view.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{ state.boxType=b.dataset.b; renderBoxes(); });
 }
 
+/* ================= CHORDS TAB ================= */
+const MAJREF=[0,2,4,5,7,9,11];
+const mod12=n=>((n%12)+12)%12;
+function classifyTriad(t3,t5){
+  if(t3===4&&t5===7) return {q:'maj',suf:'',cse:'up',tag:'major',sym:''};
+  if(t3===3&&t5===7) return {q:'min',suf:'m',cse:'low',tag:'minor',sym:''};
+  if(t3===3&&t5===6) return {q:'dim',suf:'\u00b0',cse:'low',tag:'diminished',sym:'\u00b0'};
+  if(t3===4&&t5===8) return {q:'aug',suf:'+',cse:'up',tag:'augmented',sym:'+'};
+  if(t3===4&&t5===6) return {q:'maj',suf:'(\u266d5)',cse:'up',tag:'major \u266d5',sym:''};
+  if(t3===3&&t5===8) return {q:'min',suf:'(\u266f5)',cse:'low',tag:'minor \u266f5',sym:''};
+  return {q:'?',suf:'',cse:'up',tag:'unusual',sym:''};
+}
+function seventhSuffix(q,s7){
+  if(q==='maj') return s7===11?'maj7':'7';
+  if(q==='min') return s7===11?'m(maj7)':'m7';
+  if(q==='dim') return s7===9?'\u00b07':'m7\u266d5';
+  if(q==='aug') return s7===11?'maj7\u266f5':'7\u266f5';
+  return '7';
+}
+function acc(diff){ return diff<0?'\u266d'.repeat(-diff): diff>0?'\u266f'.repeat(diff):''; }
+function harmonize(scale, root){
+  const out=[];
+  for(let i=0;i<7;i++){
+    const rSemi=(root+scale.off[i])%12;
+    const t3=mod12(scale.off[(i+2)%7]-scale.off[i]);
+    const t5=mod12(scale.off[(i+4)%7]-scale.off[i]);
+    const s7=mod12(scale.off[(i+6)%7]-scale.off[i]);
+    const tri=classifyTriad(t3,t5);
+    const d=scale.off[i]-MAJREF[i];
+    const base=['I','II','III','IV','V','VI','VII'][i];
+    const roman=acc(d)+(tri.cse==='low'?base.toLowerCase():base)+tri.sym;
+    const notes3=[i,(i+2)%7,(i+4)%7].map(k=>NOTE[(root+scale.off[k])%12]);
+    const notes7=[...notes3, NOTE[(root+scale.off[(i+6)%7])%12]];
+    out.push({ i, rootSemi:rSemi, rootNote:NOTE[rSemi], t3, t5, s7, tri, roman,
+      arabic:acc(d)+(i+1), triadName:NOTE[rSemi]+tri.suf, seventhName:NOTE[rSemi]+seventhSuffix(tri.q,s7),
+      notes3, notes7 });
+  }
+  return out;
+}
+function chordDmap(ch, use7){ const m={}; m[0]='R'; m[ch.t3]='3'; m[ch.t5]='5'; if(use7) m[ch.s7]='7'; return m; }
+function progsFor(chords){
+  const q=chords[0].tri.q;
+  if(q==='maj') return [['1 \u2013 4 \u2013 5',[0,3,4]],['1 \u2013 5 \u2013 6 \u2013 4',[0,4,5,3]],['2 \u2013 5 \u2013 1',[1,4,0]]];
+  if(q==='min') return [['1 \u2013 4 \u2013 5',[0,3,4]],['1 \u2013 \u266d6 \u2013 \u266d7',[0,5,6]],['1 \u2013 \u266d7 \u2013 \u266d6',[0,6,5]]];
+  return null;
+}
+function renderChords(){
+  const raw=scaleById(state.scaleId);
+  let sc=raw, fallback=null;
+  if(raw.off.length!==7){ sc=scaleById(raw.id==='majpent'?'ionian':'aeolian'); fallback=raw; }
+  const chords=harmonize(sc, state.root);
+  if(state.chordDeg>6||state.chordDeg<0) state.chordDeg=0;
+  const use7=!!state.seventh;
+  const rootName=NOTE[state.root];
+  const sel=chords[state.chordDeg];
+  const progs=progsFor(chords);
+  const intName={3:'minor 3rd',4:'major 3rd',6:'\u266d5th',7:'perfect 5th',8:'\u266f5th'};
+
+  let rows=chords.map(c=>`<div class="chordrow ${c.i===state.chordDeg?'on':''}" data-d="${c.i}">
+      <span class="rom">${c.roman}</span>
+      <span class="cname">${use7?c.seventhName:c.triadName}</span>
+      <span class="ctag">${c.tri.tag}</span>
+      <span class="cnotes">${(use7?c.notes7:c.notes3).join(' \u00b7 ')}</span></div>`).join('');
+
+  let progHTML = progs? progs.map(p=>{
+    const seq=p[1].map(i=>use7?chords[i].seventhName:chords[i].triadName).join('<span class="aw">\u2192</span>');
+    return `<div class="cprog"><span class="pl">${p[0]}</span><span class="pc">${seq}</span></div>`;
+  }).join('') : `<div class="muted" style="font-size:12.5px;color:var(--ink2);">This scale\u2019s tonic chord isn\u2019t a plain major or minor, so it doesn\u2019t sit in the usual progression templates \u2014 explore the chords above directly.</div>`;
+
+  view.innerHTML=`
+    <div class="rlabel">Root note</div>
+    <div class="rootrow">${NOTE.map((n,i)=>`<button class="rootchip ${i===state.root?'on':''}" data-r="${i}">${n}</button>`).join('')}</div>
+    ${fallback?`<div class="banner"><b>${NOTE[state.root]} ${fallback.name}</b> is a ${fallback.off.length}-note scale, so it isn\u2019t harmonised into seven chords. Showing the chords of its parent 7-note scale, <b>${rootName} ${sc.name}</b>, instead.</div>`:''}
+    <div class="card">
+      <div class="scaletitle"><span class="nm">Chords in ${rootName} ${sc.name}</span></div>
+      <p class="muted" style="font-size:12.5px;">Each chord is built by stacking scale notes in thirds \u2014 the <b>1\u20133\u20135</b> (and the 7th). Tap a chord to see its tones on the neck.</p>
+      <div class="seg" style="margin-top:10px;">
+        <button data-sev="0" class="${!use7?'on':''}">Triads (1\u20133\u20135)</button>
+        <button data-sev="1" class="${use7?'on':''}">7th chords</button>
+      </div>
+      ${rows}
+    </div>
+
+    <h2 class="sec">${sel.roman} \u00b7 ${use7?sel.seventhName:sel.triadName}</h2>
+    <div class="card">
+      <div class="cformula"><b>Notes:</b> ${(use7?sel.notes7:sel.notes3).join(' \u2013 ')} &nbsp;\u00b7&nbsp; <b>Quality:</b> ${sel.tri.tag} triad${use7?' + 7th':''}</div>
+      <div class="cformula"><b>Built from:</b> root + ${intName[sel.t3]||sel.t3+'st'} + ${intName[sel.t5]||sel.t5+'st'}${use7?(' + '+(sel.s7===11?'major 7th':sel.s7===10?'minor 7th':sel.s7===9?'diminished 7th':sel.s7+'st')):''}</div>
+      <div class="neckwrap">${neck(chordDmap(sel,use7), sel.rootSemi, 0, 12, 'ch'+sel.i+state.root)}</div>
+      <div class="legend"><span class="d"><span class="sw sw-r"></span> R (chord root)</span><span class="d"><span class="sw sw-n"></span> 3 \u00b7 5${use7?' \u00b7 7':''}</span></div>
+      <div class="diagcap">${sel.rootNote}${use7?seventhSuffix(sel.tri.q,sel.s7):sel.tri.suf} across the neck</div>
+    </div>
+
+    <h2 class="sec">Common progressions</h2>
+    <div class="card">${progHTML}</div>
+    <div class="callout"><b>Tie it together:</b> these numbers are the Nashville system, the chord tones are what your solos aim at, and the shapes live in the CAGED positions. Harmonising the scale is where melody and rhythm meet.</div>
+  `;
+  view.querySelectorAll('.rootchip').forEach(b=>b.onclick=()=>{ state.root=+b.dataset.r; renderChords(); });
+  view.querySelectorAll('.chordrow').forEach(b=>b.onclick=()=>{ state.chordDeg=+b.dataset.d; renderChords(); });
+  view.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{ state.seventh=b.dataset.sev==='1'; renderChords(); });
+}
+
 /* ================= GUIDE TAB ================= */
 function renderGuide(){
   view.innerHTML=`
@@ -266,12 +380,24 @@ function renderGuide(){
     <div class="card principle"><div class="pt">The characteristic note</div><div class="pb">Each mode has one note that defines its mood \u2014 Dorian\u2019s natural 6, Phrygian\u2019s \u266d2, Lydian\u2019s \u266f4, Mixolydian\u2019s \u266d7. Lean on that note and the mode sings; avoid it and it collapses back into plain major or minor.</div></div>
     <div class="card principle"><div class="pt">Pentatonics are the safe distillation</div><div class="pb">Minor pentatonic is natural minor with the two \u201ctense\u201d notes (the 2 and \u266d6) removed \u2014 five notes that always sound right. It sits inside the modes, which is why you can start with the boxes and add the extra mode notes later. See the <b>Boxes</b> tab.</div></div>
     <div class="card principle"><div class="pt">Beyond the major scale</div><div class="pb">Harmonic minor raises the 7th for a dramatic, classical pull; Phrygian dominant (its 5th mode) gives that Spanish/metal edge; the blues scale adds a \u266d5 \u201cblue note.\u201d These are where rock and metal get their darker colours.</div></div>
-    <div class="callout"><b>How to use this app:</b> pick a root, browse the scales to read each one\u2019s formula and mood and hear it, use the neck diagram to see the shape, and jump to Boxes for the five pentatonic positions in your key.</div>
+    <h2 class="sec">Intervals \u2014 the raw material</h2>
+    <div class="card principle"><div class="pt">Everything is measured in steps</div><div class="pb">An interval is the distance between two notes. The ones that matter most: the <b>3rd</b> decides major (bright, 4 half-steps) vs minor (dark, 3 half-steps); the <b>5th</b> is usually \u201cperfect\u201d (7 half-steps) and rock-solid; the <b>7th</b> adds colour. Stack a 3rd on a 3rd and you get a chord \u2014 which is the next idea.</div></div>
+
+    <h2 class="sec">Harmony \u2014 chords from scales</h2>
+    <div class="card principle"><div class="pt">Stack the scale in thirds</div><div class="pb">Take any scale note as a root, skip a note to get the 3rd, skip again for the 5th \u2014 that\u2019s the <b>1\u20133\u20135</b> triad. Do it on all seven degrees and you get the chords of the key. In major the pattern is always <b>I ii iii IV V vi vii\u00b0</b>; in natural minor it\u2019s <b>i ii\u00b0 \u266dIII iv v \u266dVI \u266dVII</b>. The <b>Chords</b> tab does this for any scale and root.</div></div>
+    <div class="card principle"><div class="pt">Why the 5 chord pulls home</div><div class="pb">The chord on the 5th degree contains the scale\u2019s leading tone (or, in harmonic minor, a raised 7th that forces one). That creates a strong tug back to the 1 \u2014 the engine behind almost every resolution. Add the 7th and it becomes a dominant <b>7</b> chord, pulling even harder.</div></div>
+    <div class="card principle"><div class="pt">7th chords add the colour</div><div class="pb">Stacking one more third gives four-note chords: <b>maj7</b> (lush), <b>m7</b> (smooth), dominant <b>7</b> (bluesy tension), and <b>m7\u266d5</b> (the tense one on the 7th degree). Same scale, richer harmony \u2014 toggle them on in the Chords tab.</div></div>
+
+    <h2 class="sec">Putting modes to work</h2>
+    <div class="card principle"><div class="pt">Match the mode to the chord</div><div class="pb">A mode\u2019s job is to fit a chord. Over a <b>minor / m7</b> chord, reach for Aeolian, Dorian, or Phrygian; over a <b>dominant 7</b>, Mixolydian (or Phrygian dominant for metal); over a <b>maj7</b>, Ionian or Lydian; over an <b>m7\u266d5</b>, Locrian. Pick the mode whose characteristic note flatters that chord.</div></div>
+    <div class="card principle"><div class="pt">Aim at the chord tones</div><div class="pb">The strongest solo notes are the current chord\u2019s 1, 3, and 5 \u2014 the same notes the Chords tab shows on the neck. Land on those on the strong beats and let the rest of the scale connect them. That\u2019s where scales, chords, and phrasing become one thing.</div></div>
+
+    <div class="callout"><b>How to use this app:</b> pick a root, browse the <b>Scales</b> to read each one\u2019s formula and mood and hear it; open <b>Chords</b> to see the key\u2019s chords and their tones; use <b>Boxes</b> for the five pentatonic positions; and come back here for the why.</div>
   `;
 }
 
 /* nav */
-const R={scales:renderScales, boxes:renderBoxes, guide:renderGuide};
+const R={scales:renderScales, chords:renderChords, boxes:renderBoxes, guide:renderGuide};
 function go(t){ state.tab=t; document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t)); R[t](); window.scrollTo(0,0); }
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>go(b.dataset.t));
 

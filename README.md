@@ -6,6 +6,7 @@ Part of a five-app practice system. This is the scale & mode encyclopedia that f
 
 ## What's inside
 - **Scales** — pick any root, then browse all thirteen scales: the seven **major-scale modes** (Ionian, Dorian, Phrygian, Lydian, Mixolydian, Aeolian, Locrian), **major/minor pentatonic and blues**, and **harmonic minor, melodic minor, and Phrygian dominant**. Each shows its note names, degree formula, W/H step pattern, mood, characteristic note, what to play it over, a **fretboard diagram**, and a **Hear it** button
+- **Chords** — harmonizes the current scale into its diatonic chords: stacks **1‑3‑5** (and 7ths) on every degree, names each chord, shows its Roman numeral / Nashville number, its notes, its tones on the neck, and the common progressions in the key
 - **Boxes** — the chosen pentatonic (major or minor) laid out as the **five movable positions** across the neck, transposing live with the root
 - **Guide** — how scales and modes actually work: formulas, the parent-scale idea, relative vs parallel thinking, characteristic notes, and how pentatonics fit inside the modes
 - Works **offline**
